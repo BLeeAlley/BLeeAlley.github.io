@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hamlet — Learn by Play</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --muted:#9aa4b2;
+    --fg:#e6e9ef;
+    --accent:#7c9cff;
+    --accent-2:#7fffd4;
+    --warn:#ffcc66;
+    --bad:#ff6b6b;
+    --good:#52ffa8;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --radius:14px;
+    --radius-sm:10px;
+    --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at -10% -20%, #1a1f2b 0%, transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, #122235 0%, transparent 60%),
+      linear-gradient(180deg, #0c0f14 0%, #0f1115 100%);
+    color:var(--fg); font:16px/1.55 var(--font);
+    letter-spacing:.2px;
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    background:rgba(15,17,21,.75); backdrop-filter: blur(10px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .wrap{max-width:1200px; margin:0 auto; padding:14px 18px;}
+  .brand{display:flex; align-items:center; gap:12px}
+  .brand h1{font-size:18px; margin:0; letter-spacing:.4px}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+    border:1px solid rgba(255,255,255,.08); border-radius:999px; color:var(--muted);
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
+  }
+  .grid{display:grid; grid-template-columns:280px 1fr; gap:16px; padding:18px}
+  @media (max-width:950px){ .grid{grid-template-columns:1fr} }
+  nav{
+    position:sticky; top:68px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  nav button{
+    all:unset; cursor:pointer; padding:12px 14px; border-radius:var(--radius-sm);
+    color:var(--fg); background:var(--panel); border:1px solid rgba(255,255,255,.06);
+    box-shadow: var(--shadow); transition: transform .06s ease, background .2s ease, border-color .2s ease;
+  }
+  nav button[aria-selected="true"]{ outline:2px solid var(--accent); }
+  nav button:hover{ transform: translateY(-1px); }
+  main section{
+    display:none; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius); padding:18px; box-shadow: var(--shadow);
+    min-height:300px;
+  }
+  main section.active{ display:block; }
+  .kpi{
+    display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 12px;
+  }
+  .kpi .meter{
+    flex:1 1 200px; background:var(--panel); border:1px solid rgba(255,255,255,.06);
+    border-radius:12px; padding:10px 12px;
+  }
+  .meter h4{ margin:0 0 8px; font-size:13px; color:var(--muted); letter-spacing:.4px; }
+  .bar{ height:8px; background:rgba(255,255,255,.06); border-radius:999px; overflow:hidden; }
+  .bar > span{ display:block; height:100%; width:50%; background:
+    linear-gradient(90deg, var(--accent), var(--accent-2)); transition:width .4s ease; }
+
+  #storyText{ font-size:18px; line-height:1.7; margin-bottom:14px; }
+  .choices{ display:flex; flex-direction:column; gap:10px; }
+  .choices button{
+    all:unset; display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+    background:linear-gradient(180deg, #18202b, #141922);
+    border:1px solid rgba(255,255,255,.08); padding:12px 14px; border-radius:12px;
+  }
+  .choices button:hover{ border-color:var(--accent); }
+  .kbd{ font:12px var(--mono); padding:2px 6px; border:1px solid rgba(255,255,255,.2); border-radius:6px; color:var(--muted); }
+  .hint{ color:var(--muted); font-size:14px; }
+  .badge{ font:11px var(--mono); border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:2px 8px; color:var(--muted); }
+
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .card{
+    background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px;
+  }
+  .card h3{ margin:0 0 6px; font-size:16px }
+  .muted{ color:var(--muted) }
+  .quote{ font-style:italic; color:#cfd6ff; }
+  .tag{ display:inline-block; margin:6px 6px 0 0; font:12px var(--mono); color:#b9ffea; border:1px dashed rgba(185,255,234,.5); border-radius:999px; padding:2px 8px; }
+
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin-bottom:12px }
+  .toolbar .group{ display:flex; gap:8px; align-items:center }
+  .btn{
+    all:unset; cursor:pointer; padding:8px 12px; border-radius:10px;
+    background:linear-gradient(180deg, #1a2230, #121824); border:1px solid rgba(255,255,255,.08);
+  }
+  .btn:hover{ border-color:var(--accent) }
+  .btn.warn{ border-color: rgba(255,204,102,.6); color:var(--warn) }
+  .btn.good{ border-color: rgba(82,255,168,.6); color:var(--good) }
+  .btn.bad{ border-color: rgba(255,107,107,.6); color:var(--bad) }
+
+  .map{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;
+  }
+  .spot{ position:relative; isolation:isolate; min-height:110px; padding:12px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.08); background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+    overflow:hidden;
+  }
+  .spot::after{
+    content:""; position:absolute; inset:0; z-index:-1;
+    background: radial-gradient(180px 60px at 100% 0, rgba(124,156,255,.15), transparent),
+                radial-gradient(140px 50px at 0 100%, rgba(127,255,212,.12), transparent);
+  }
+  .spot h4{ margin:0 0 6px }
+  .spot .events{ font-size:14px; color:var(--muted) }
+
+  .quizQ{ font-size:18px; margin:10px 0 }
+  .quizOpts{ display:flex; flex-direction:column; gap:8px }
+  .ok{ color:var(--good) } .no{ color:var(--bad) }
+
+  textarea{ width:100%; min-height:180px; resize:vertical; background:#0e131b; color:var(--fg);
+    border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px; font:14px/1.6 var(--mono);
+  }
+  footer{ color:var(--muted); font-size:12px; text-align:center; padding:18px 0 40px }
+  .sr-only{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div class="brand">
+      <div class="pill" aria-hidden="true">🎭</div>
+      <h1>Hamlet — Learn by Play</h1>
+      <span class="pill" title="Mode">Act through choices, then reflect.</span>
+    </div>
+    <div class="group">
+      <button class="btn" id="themeToggle" aria-pressed="false" title="Toggle dark/light">🌙 Theme</button>
+      <button class="btn" id="saveBtn" title="Save progress">💾 Save</button>
+      <button class="btn warn" id="resetBtn" title="Reset everything">♻️ Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="grid wrap" role="application" aria-label="Hamlet learning app">
+  <nav aria-label="Sections" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="play">▶️ Playthrough</button>
+    <button role="tab" aria-selected="false" data-tab="explore">📚 Explore</button>
+    <button role="tab" aria-selected="false" data-tab="themes">🧭 Themes</button>
+    <button role="tab" aria-selected="false" data-tab="map">🗺️ Map</button>
+    <button role="tab" aria-selected="false" data-tab="quiz">❓ Quiz</button>
+    <button role="tab" aria-selected="false" data-tab="journal">📝 Journal</button>
+    <button role="tab" aria-selected="false" data-tab="about">ℹ️ About</button>
+  </nav>
+
+  <main>
+    <!-- PLAYTHROUGH -->
+    <section id="play" class="active" aria-labelledby="Playthrough">
+      <div class="toolbar">
+        <div class="group">
+          <span class="badge" id="actScene">Act I • Scene i</span>
+          <span class="badge" id="canonicalHint" title="Whether your current path matches Shakespeare’s plot">Path: <b id="canonState">open</b></span>
+          <span class="badge">Press <b class="kbd">1</b>…<b class="kbd">5</b> to choose</span>
+        </div>
+        <div class="group">
+          <button class="btn" id="backBtn" title="Go to previous node">↩︎ Back</button>
+          <button class="btn" id="restartBtn" title="Restart playthrough">🔁 Restart</button>
+        </div>
+      </div>
+
+      <div id="storyText"></div>
+
+      <div class="kpi" aria-label="Theme meters">
+        <div class="meter"><h4>Action vs Inaction</h4><div class="bar"><span id="mAction"></span></div></div>
+        <div class="meter"><h4>Conscience vs Impulse</h4><div class="bar"><span id="mConscience"></span></div></div>
+        <div class="meter"><h4>Trust vs Suspicion</h4><div class="bar"><span id="mTrust"></span></div></div>
+      </div>
+
+      <div class="choices" id="choices" role="group" aria-label="Choices"></div>
+      <p class="hint" id="nodeHint" hidden></p>
+    </section>
+
+    <!-- EXPLORE -->
+    <section id="explore" aria-labelledby="Explore">
+      <div class="toolbar">
+        <div class="group">
+          <label for="filterRole" class="sr-only">Filter</label>
+          <select id="filterRole" class="btn" title="Filter by role">
+            <option value="all">All roles</option>
+            <option value="royal">Royal family</option>
+            <option value="court">Court</option>
+            <option value="friends">Friends</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn" id="shuffleChars">🔀 Shuffle</button>
+        </div>
+        <div class="group">
+          <button class="btn good" id="focusQuotes">✨ Key Quotes</button>
+        </div>
+      </div>
+      <div class="cards" id="characterCards"></div>
+    </section>
+
+    <!-- THEMES -->
+    <section id="themes" aria-labelledby="Themes">
+      <div class="kpi">
+        <div class="meter"><h4>Appearance ↔ Reality</h4><div class="bar"><span id="tAppear"></span></div></div>
+        <div class="meter"><h4>Action ↔ Inaction</h4><div class="bar"><span id="tAct"></span></div></div>
+        <div class="meter"><h4>Mortality ↔ Meaning</h4><div class="bar"><span id="tMort"></span></div></div>
+      </div>
+      <p class="muted">These meters reflect your path so far and drive the interpretation below. Adjust them to see how the reading shifts.</p>
+      <div class="toolbar">
+        <div class="group">
+          <input type="range" min="0" max="100" value="50" id="slAppear" title="Appearance vs Reality">
+          <input type="range" min="0" max="100" value="50" id="slAct" title="Action vs Inaction">
+          <input type="range" min="0" max="100" value="50" id="slMort" title="Mortality vs Meaning">
+        </div>
+        <div class="group">
+          <button class="btn" id="syncFromPlay">↺ Sync from playthrough</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Your interpretive summary</h3>
+        <div id="themeSummary"></div>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section id="map" aria-labelledby="Map of Elsinore">
+      <div class="map" id="mapSpots"></div>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="quiz" aria-labelledby="Quiz">
+      <div class="card">
+        <div class="toolbar">
+          <div class="group">
+            <span class="badge">Question <span id="qNum">1</span>/5</span>
+          </div>
+          <div class="group">
+            <button class="btn" id="nextQ">Next</button>
+            <button class="btn" id="restartQuiz">Restart</button>
+          </div>
+        </div>
+        <div class="quizQ" id="quizQ"></div>
+        <div class="quizOpts" id="quizOpts"></div>
+        <p id="quizFeedback" class="muted"></p>
+      </div>
+      <p class="muted" id="quizScore"></p>
+    </section>
+
+    <!-- JOURNAL -->
+    <section id="journal" aria-labelledby="Journal">
+      <div class="toolbar">
+        <div class="group">
+          <button class="btn" id="insertPrompt">Prompt</button>
+          <button class="btn good" id="exportJournal">Export</button>
+        </div>
+        <div class="group">
+          <span class="badge">Auto-saved locally</span>
+        </div>
+      </div>
+      <textarea id="journalArea" placeholder="Write a line you’d speak if you were Hamlet. Or Ophelia. Or the Ghost. What do you want the play to ask of you?"></textarea>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" aria-labelledby="About">
+      <div class="card">
+        <h3>How this works</h3>
+        <p><b>Playthrough</b> condenses <i>Hamlet</i> into choice points. Some match the original; others let you test alternatives. Your decisions nudge three meters (Action, Conscience, Trust) and shape analysis in <b>Themes</b>.</p>
+        <p><b>Explore</b> collects character snapshots and famous lines (public domain). <b>Map</b> anchors events to places in Elsinore. <b>Quiz</b> checks recall. <b>Journal</b> is for your reflections (saved in your browser only).</p>
+        <p class="muted">This is a study aid; it preserves the spirit of Shakespeare while simplifying plot and language for clarity.</p>
+      </div>
+      <div class="card">
+        <h3>Tips</h3>
+        <ul>
+          <li>Use number keys to pick choices quickly.</li>
+          <li>Watch the <b>Path</b> pill: <i>canonical</i> means you’re near Shakespeare’s plot; <i>remix</i> means you’re exploring alternatives.</li>
+          <li>Sync your playthrough to the <b>Themes</b> panel to see how interpretation shifts.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  Built for learning. Shakespeare’s text is public domain; quotations are brief and used educationally.
+</footer>
+
+<script>
+/* ==============================
+   Data: characters, quotes, map
+   ============================== */
+const CHARACTERS = [
+  {name:"Hamlet", role:"royal", line:"Prince of Denmark; philosopher of doubt.",
+   notes:"Grieves his father, suspects his uncle, wrestles with action vs conscience.",
+   quotes:[
+     {q:"To be, or not to be: that is the question.", why:"Mortality, suffering, and agency."},
+     {q:"There is nothing either good or bad, but thinking makes it so.", why:"Interpretation vs reality."},
+     {q:"The play’s the thing wherein I’ll catch the conscience of the King.", why:"Appearance as trap for truth."}
+   ]},
+  {name:"Claudius", role:"royal", line:"King of Denmark; Hamlet’s uncle.",
+   notes:"Charismatic usurper; guilt hidden under ceremony.",
+   quotes:[
+     {q:"O, my offence is rank, it smells to heaven;", why:"Private confession reveals guilt."}
+   ]},
+  {name:"Gertrude", role:"royal", line:"Queen; Hamlet’s mother.",
+   notes:"Remarriage complicates loyalty; readings vary on her knowledge.",
+   quotes:[
+     {q:"The lady doth protest too much, methinks.", why:"On performance and truth."}
+   ]},
+  {name:"Ophelia", role:"court", line:"Daughter to Polonius; Hamlet’s beloved.",
+   notes:"Pulled between father, court, and Hamlet; becomes emblem of grief.",
+   quotes:[
+     {q:"O, what a noble mind is here o’erthrown!", why:"Witness to Hamlet’s unraveling."}
+   ]},
+  {name:"Polonius", role:"court", line:"Lord Chamberlain; advice-giver and spy.",
+   notes:"Paternal meddler; death pivots the plot.",
+   quotes:[
+     {q:"To thine own self be true.", why:"Famous counsel; ironic in context."}
+   ]},
+  {name:"Laertes", role:"friends", line:"Polonius’s son; foil to Hamlet.",
+   notes:"Decisive avenger; contrasts Hamlet’s delay.",
+   quotes:[
+     {q:"I dare damnation. To this point I stand…", why:"Action without Hamlet’s scruple."}
+   ]},
+  {name:"Horatio", role:"friends", line:"Hamlet’s friend and witness.",
+   notes:"Steady observer; survives to tell the tale.",
+   quotes:[
+     {q:"Now cracks a noble heart. Good night, sweet prince;", why:"Elegy that seals the tragedy."}
+   ]},
+  {name:"Ghost", role:"other", line:"Apparition of Hamlet’s father.",
+   notes:"Catalyst; demands revenge; raises truth/illusion questions.",
+   quotes:[
+     {q:"Remember me.", why:"Command that haunts the play."}
+   ]}
+];
+
+const MAP = [
+  {place:"Ramparts", desc:"Cold watch at Elsinore’s walls; the Ghost appears.",
+   events:["Ghost reveals murder","Hamlet swears Horatio to secrecy"], act:"I"},
+  {place:"Court Hall", desc:"Ceremony masks corruption.",
+   events:["Claudius justifies his rule","Rosencrantz & Guildenstern arrive"], act:"I–II"},
+  {place:"Polonius’s Chamber", desc:"Advice and schemes.",
+   events:["Polonius sends Reynaldo to spy","Hamlet kills Polonius behind the arras"], act:"II–III"},
+  {place:"Players’ Stage", desc:"Mirror to the court.",
+   events:["The Mousetrap performance exposes Claudius"], act:"III"},
+  {place:"Chapel", desc:"Private guilt meets public restraint.",
+   events:["Claudius tries to pray; Hamlet spares him"], act:"III"},
+  {place:"Queen’s Closet", desc:"A charged confrontation.",
+   events:["Hamlet confronts Gertrude; Ghost reappears"], act:"III"},
+  {place:"Graveyard", desc:"Skulls, jokes, and stark mortality.",
+   events:["Alas, poor Yorick!","Ophelia’s funeral; Laertes and Hamlet grapple"], act:"V"},
+  {place:"Great Hall", desc:"Final wagers and reckonings.",
+   events:["The duel with Laertes","Poisoned cup; tragic cascade"], act:"V"}
+];
+
+/* ==============================
+   Playthrough Graph (condensed)
+   Each node provides: id, act, scene, text, choices[]
+   choice: { text, next, delta:{A,C,T}, canonical?, hint? }
+   ============================== */
+const NODES = {
+  start:{
+    id:"start", act:"I", scene:"i",
+    text:"A freezing night on Elsinore’s ramparts. A Ghost resembling your dead father beckons you. Horatio is shaken; the guards swear they saw it too.",
+    choices:[
+      {text:"Follow the Ghost and demand the truth.", next:"ghostReveal", delta:{A:+8,C:-2,T:+3}, canonical:true, hint:"Hamlet follows; the Ghost claims murder."},
+      {text:"Refuse—visions deceive; stay with Horatio.", next:"missedGhost", delta:{A:-6,C:+4,T:+2}, canonical:false, hint:"Doubt delays the plot; anxiety grows."}
+    ]
+  },
+  ghostReveal:{
+    id:"ghostReveal", act:"I", scene:"v",
+    text:"Alone, the Ghost declares: your uncle Claudius murdered the King, then married your mother. “Revenge his foul and most unnatural murder.”",
+    choices:[
+      {text:"Swear revenge but feign madness to buy time.", next:"anticDisposition", delta:{A:+2,C:+5,T:-2}, canonical:true, hint:"He adopts an 'antic disposition'."},
+      {text:"Storm the court and accuse Claudius publicly.", next:"rashAccuse", delta:{A:+9,C:-7,T:-5}, canonical:false, hint:"Bold—but proofless—accusation backfires."}
+    ]
+  },
+  missedGhost:{
+    id:"missedGhost", act:"I", scene:"ii",
+    text:"You shun the vision. Yet rumors spread. Claudius is genial; something still rots. Doubt corrodes resolve.",
+    choices:[
+      {text:"Seek private audience with Claudius to probe.", next:"probeClaudius", delta:{A:+1,C:+2,T:-3}, canonical:false},
+      {text:"At last—pursue the Ghost on the next watch.", next:"ghostReveal", delta:{A:+4,C:-1,T:+1}, canonical:false}
+    ]
+  },
+  anticDisposition:{
+    id:"anticDisposition", act:"II", scene:"i",
+    text:"You act strange. Polonius blames love; Claudius sends for your schoolfellows to spy. Players arrive—an opportunity.",
+    choices:[
+      {text:"Stage a play to 'catch the conscience' of the King.", next:"mousetrap", delta:{A:+3,C:+4,T:-1}, canonical:true},
+      {text:"Confide fully in Ophelia; ask her aid.", next:"confideOphelia", delta:{A:+1,C:+2,T:+5}, canonical:false}
+    ]
+  },
+  rashAccuse:{
+    id:"rashAccuse", act:"I", scene:"iv",
+    text:"You denounce Claudius before the court. He calls it grief-madness. Without proof, courtiers harden against you.",
+    choices:[
+      {text:"Retreat into planning—adopt feigned madness now.", next:"anticDisposition", delta:{A:-2,C:+3,T:-3}, canonical:false},
+      {text:"Challenge Claudius to trial by combat.", next:"banished", delta:{A:+8,C:-8,T:-6}, canonical:false, hint:"Un-Danish and rash; you are removed from court."}
+    ]
+  },
+  probeClaudius:{
+    id:"probeClaudius", act:"II", scene:"ii",
+    text:"Oil-smooth answers. Rosencrantz and Guildenstern arrive with smiles too polished.",
+    choices:[
+      {text:"Use the Players to test the King's guilt.", next:"mousetrap", delta:{A:+2,C:+3,T:-2}, canonical:true},
+      {text:"Spy directly—eavesdrop wherever possible.", next:"eavesdrop", delta:{A:+1,C:+1,T:-4}, canonical:false}
+    ]
+  },
+  eavesdrop:{
+    id:"eavesdrop", act:"II", scene:"ii",
+    text:"You shadow corridors. Everyone shadows you back. The net tightens.",
+    choices:[
+      {text:"Abandon shadows—use the play as proof.", next:"mousetrap", delta:{A:+2,C:+2,T:-3}, canonical:true},
+      {text:"Flee Elsinore to raise allies abroad.", next:"exile", delta:{A:+5,C:-2,T:-2}, canonical:false}
+    ]
+  },
+  mousetrap:{
+    id:"mousetrap", act:"III", scene:"ii",
+    text:"The Players reenact a king’s murder by poison in the ear. Claudius bolts—guilt laid bare.",
+    choices:[
+      {text:"Strike now and kill him in the chapel.", next:"chapel", delta:{A:+8,C:-5,T:-3}, canonical:false, hint:"In the original, Hamlet delays here."},
+      {text:"Confront your mother first; purge the rot at home.", next:"closet", delta:{A:+2,C:+2,T:-1}, canonical:true}
+    ]
+  },
+  chapel:{
+    id:"chapel", act:"III", scene:"iii",
+    text:"Claudius kneels, trying to pray. You hover behind with a blade.",
+    choices:[
+      {text:"Spare him—murder at prayer sends him to heaven.", next:"closet", delta:{A:-4,C:+6,T:-2}, canonical:true, hint:"Hamlet chooses not to kill during prayer."},
+      {text:"Kill him now; justice outweighs theology.", next:"altEndQuick", delta:{A:+9,C:-6,T:-4}, canonical:false}
+    ]
+  },
+  closet:{
+    id:"closet", act:"III", scene:"iv",
+    text:"In your mother’s chamber you rage at corruption; a cry behind the arras—your thrust kills Polonius.",
+    choices:[
+      {text:"Accept blood on your hands; double down on exposing Claudius.", next:"banished", delta:{A:+3,C:-3,T:-3}, canonical:true},
+      {text:"Repent and surrender to judgment.", next:"prison", delta:{A:-6,C:+6,T:+1}, canonical:false}
+    ]
+  },
+  banished:{
+    id:"banished", act:"IV", scene:"iii",
+    text:"Claudius ships you to England with secret orders for your death. You rewrite the letters; pirates deliver you home.",
+    choices:[
+      {text:"Return in stealth; watch Laertes raise a mob.", next:"laertes", delta:{A:+4,C:+1,T:-2}, canonical:true},
+      {text:"Expose the letters to the court upon return.", next:"courtReveal", delta:{A:+2,C:+2,T:+1}, canonical:false}
+    ]
+  },
+  prison:{
+    id:"prison", act:"IV", scene:"i",
+    text:"Confinement grants time to think but cedes initiative.",
+    choices:[
+      {text:"Escape with Horatio’s aid.", next:"laertes", delta:{A:+4,C:+1,T:+2}, canonical:false},
+      {text:"Remain; Claudius arranges your quiet removal.", next:"badEnd", delta:{A:-8,C:+1,T:-3}, canonical:false}
+    ]
+  },
+  laertes:{
+    id:"laertes", act:"IV", scene:"v",
+    text:"Ophelia, undone by grief, is lost to the water. Laertes, burning for revenge, conspires with Claudius: a poisoned duel.",
+    choices:[
+      {text:"Accept the duel—trust in providence.", next:"duel", delta:{A:+2,C:+3,T:+1}, canonical:true},
+      {text:"Refuse; demand open trial and search of weapons.", next:"trial", delta:{A:+1,C:+2,T:-2}, canonical:false}
+    ]
+  },
+  duel:{
+    id:"duel", act:"V", scene:"ii",
+    text:"Foils are exchanged, wounds traded, the cup is poisoned. Truth erupts too late; a tragic chain consumes the court.",
+    choices:[
+      {text:"Face the end; bequeath the story to Horatio.", next:"tragicEnd", delta:{A:+2,C:+3,T:+4}, canonical:true},
+      {text:"Attempt to save the Queen and flee the hall.", next:"chaosEnd", delta:{A:+3,C:+1,T:-2}, canonical:false}
+    ]
+  },
+  trial:{
+    id:"trial", act:"V", scene:"ii",
+    text:"You delay the duel; the court grows suspicious. Claudius shifts the trap—fate returns with other teeth.",
+    choices:[
+      {text:"Confront him publicly with the letter you altered.", next:"courtReveal", delta:{A:+3,C:+2,T:+1}, canonical:false},
+      {text:"Relent and fight anyway.", next:"duel", delta:{A:+1,C:+0,T:-1}, canonical:false}
+    ]
+  },
+  courtReveal:{
+    id:"courtReveal", act:"V", scene:"ii",
+    text:"You produce the English letters ordering your death. Claudius’s mask cracks, but loyalists muddy the water.",
+    choices:[
+      {text:"Push for arrest; accept that tragedy may follow.", next:"duel", delta:{A:+1,C:+2,T:-1}, canonical:false},
+      {text:"Seize him at sword point now.", next:"chaosEnd", delta:{A:+7,C:-4,T:-3}, canonical:false}
+    ]
+  },
+  altEndQuick:{
+    id:"altEndQuick", act:"III", scene:"iii",
+    text:"You kill Claudius at prayer. Justice is swift—yet the court fractures; Gertrude is imperiled; Laertes still returns.",
+    choices:[
+      {text:"Stabilize the realm; reconcile with Laertes.", next:"trial", delta:{A:+3,C:+2,T:+1}, canonical:false},
+      {text:"Purge the court of conspirators.", next:"chaosEnd", delta:{A:+6,C:-3,T:-5}, canonical:false}
+    ]
+  },
+  exile:{
+    id:"exile", act:"III", scene:"iv",
+    text:"Distance cools passion but cedes the stage. Claudius tightens control; Ophelia’s fate worsens.",
+    choices:[
+      {text:"Return at news of your father’s grave disturbed.", next:"graveyard", delta:{A:+2,C:+1,T:-1}, canonical:false},
+      {text:"Write a public manifesto from abroad.", next:"trial", delta:{A:+1,C:+2,T:+1}, canonical:false}
+    ]
+  },
+  graveyard:{
+    id:"graveyard", act:"V", scene:"i",
+    text:"With Yorick’s skull in hand, you weigh mortality. Ophelia’s funeral arrives; grief erupts between you and Laertes.",
+    choices:[
+      {text:"Confess love openly; accept the duel when it comes.", next:"duel", delta:{A:+2,C:+3,T:+0}, canonical:true},
+      {text:"Renounce vengeance; leave the court forever.", next:"softEnd", delta:{A:-4,C:+5,T:+2}, canonical:false}
+    ]
+  },
+  tragicEnd:{
+    id:"tragicEnd", act:"V", scene:"ii",
+    text:"The Queen falls; Laertes and you are wounded by poison. Claudius is killed; you die in Horatio’s arms. Fortinbras enters to claim the shaken state.",
+    choices:[]
+  },
+  chaosEnd:{
+    id:"chaosEnd", act:"V", scene:"ii",
+    text:"Steel flashes; panic scatters courtiers. Truth is mangled by violence. Denmark survives, but its story is incoherent.",
+    choices:[]
+  },
+  softEnd:{
+    id:"softEnd", act:"V", scene:"i",
+    text:"You choose exile and silence over blood. Denmark’s rot persists, but you leave the stage alive—and haunted.",
+    choices:[]
+  },
+  badEnd:{
+    id:"badEnd", act:"IV", scene:"iii",
+    text:"Quietly dispatched, your story ends offstage. Others will write Denmark’s future without you.",
+    choices:[]
+  }
+};
+
+/* ==============================
+   Quiz bank (simple)
+   ============================== */
+const QUIZ = [
+  {q:"Who says “To thine own self be true”?", opts:["Hamlet","Polonius","Horatio","Gertrude"], a:1, why:"Polonius counsels Laertes (Act I, sc. iii)."},
+  {q:"“The play’s the thing wherein I’ll catch the conscience of the King.” refers to…", opts:["A duel","A confession","A staged murder","A wedding"], a:2, why:"Hamlet uses the Players’ show as a trap (Act III)."},
+  {q:"In the chapel scene, Hamlet spares Claudius because…", opts:["He pities him","He fears being seen","He thinks Claudius might go to heaven if killed praying","His sword breaks"], a:2, why:"He delays on theological grounds (Act III, sc. iii)."},
+  {q:"Where does Hamlet confront his mother?", opts:["Court","Graveyard","Queen’s closet","Ramparts"], a:2, why:"The closet scene follows the mousetrap (Act III, sc. iv)."},
+  {q:"Yorick’s skull appears in…", opts:["Act V, Graveyard","Act I, Ramparts","Act II, Chamber","Act IV, Ship"], a:0, why:"The graveyard meditation on mortality."}
+];
+
+/* ==============================
+   State handling
+   ============================== */
+const STORAGE_KEY = "hamletPlayState.v1";
+const JOURNAL_KEY = "hamletJournal.v1";
+const THEME_KEY = "hamletTheme.v1";
+const THEME_DEFAULT = {appear:50, act:50, mort:50};
+
+let state = {
+  node:"start",
+  meters:{A:50, C:50, T:50},
+  history:["start"],
+  canonical:true
+};
+
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(s && s.node && s.meters) state = s;
+  }catch(e){}
+}
+function resetAll(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(JOURNAL_KEY);
+  localStorage.removeItem(THEME_KEY);
+  state = { node:"start", meters:{A:50,C:50,T:50}, history:["start"], canonical:true };
+  renderNode();
+  renderMeters();
+  renderThemeFromState();
+  document.getElementById('journalArea').value = "";
+}
+
+/* ==============================
+   Rendering: Playthrough
+   ============================== */
+const $story = document.getElementById("storyText");
+const $choices = document.getElementById("choices");
+const $actScene = document.getElementById("actScene");
+const $canonState = document.getElementById("canonState");
+const $nodeHint = document.getElementById("nodeHint");
+
+function clamp(x,min=0,max=100){ return Math.max(min, Math.min(max, x)); }
+
+function applyDelta(delta){
+  const m = state.meters;
+  m.A = clamp(m.A + (delta.A||0));
+  m.C = clamp(m.C + (delta.C||0));
+  m.T = clamp(m.T + (delta.T||0));
+}
+
+function renderMeters(){
+  document.getElementById("mAction").style.width = state.meters.A + "%";
+  document.getElementById("mConscience").style.width = state.meters.C + "%";
+  document.getElementById("mTrust").style.width = state.meters.T + "%";
+}
+
+function renderNode(){
+  const node = NODES[state.node];
+  if(!node){ return; }
+  $story.textContent = node.text;
+  $actScene.textContent = `Act ${node.act} • Scene ${node.scene}`;
+  $choices.innerHTML = "";
+  $nodeHint.hidden = true;
+  $nodeHint.textContent = "";
+
+  const atEnd = !node.choices || node.choices.length===0;
+  if(atEnd){
+    $choices.innerHTML = `<div class="muted">The play concludes. Visit <b>Themes</b> for an interpretation shaped by your choices, or <b>Restart</b> to explore another path.</div>`;
+  } else {
+    node.choices.forEach((ch, idx)=>{
+      const btn = document.createElement("button");
+      btn.innerHTML = `<span class="kbd">${idx+1}</span> <span>${ch.text}</span>`;
+      btn.addEventListener("click", ()=>{
+        state.history.push(ch.next);
+        applyDelta(ch.delta||{});
+        // canonical tracking: remains true only if all chosen steps are canonical
+        state.canonical = state.canonical && !!ch.canonical;
+        state.node = ch.next;
+        saveState();
+        renderNode();
+        renderMeters();
+        // stash hint text to show after move
+        if(ch.hint){ $nodeHint.textContent = "Hint: " + ch.hint; $nodeHint.hidden = false; }
+        // sync theme panel silently
+        renderThemeFromState();
+      });
+      $choices.appendChild(btn);
+    });
+  }
+  $canonState.textContent = state.canonical ? "canonical" : "remix";
+  $canonState.style.color = state.canonical ? "var(--good)" : "var(--warn)";
+}
+
+/* keyboard shortcuts for choices */
+window.addEventListener("keydown",(e)=>{
+  const node = NODES[state.node];
+  if(!node || !node.choices) return;
+  const n = parseInt(e.key,10);
+  if(n>=1 && n<=node.choices.length){
+    document.querySelectorAll("#choices button")[n-1].click();
+  }
+});
+
+/* Back navigation (one step) */
+document.getElementById("backBtn").addEventListener("click", ()=>{
+  if(state.history.length>1){
+    state.history.pop();
+    const prev = state.history[state.history.length-1];
+    state.node = prev;
+    // we do not reverse meters (simple model), but encourage restart for strictness
+    saveState();
+    renderNode();
+  }
+});
+document.getElementById("restartBtn").addEventListener("click", ()=>{
+  state.node = "start";
+  state.meters = {A:50,C:50,T:50};
+  state.history = ["start"];
+  state.canonical = true;
+  saveState();
+  renderNode(); renderMeters(); renderThemeFromState();
+});
+
+/* ==============================
+   Explore: characters
+   ============================== */
+const $cards = document.getElementById("characterCards");
+function renderCharacters(role="all"){
+  let list = CHARACTERS;
+  if(role!=="all") list = CHARACTERS.filter(c=>c.role===role);
+  $cards.innerHTML = "";
+  list.forEach(c=>{
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <h3>${c.name}</h3>
+      <p class="muted">${c.line}</p>
+      <p>${c.notes}</p>
+      <div>` + c.quotes.map(q=>`<div class="quote">“${q.q}”</div><div class="muted">${q.why}</div>`).join("") + `</div>
+      <div>` + `<span class="tag">${c.role}</span>` + `</div>
+    `;
+    $cards.appendChild(el);
+  });
+}
+document.getElementById("filterRole").addEventListener("change", (e)=> renderCharacters(e.target.value));
+document.getElementById("shuffleChars").addEventListener("click", ()=>{
+  CHARACTERS.sort(()=>Math.random()-.5); renderCharacters(document.getElementById("filterRole").value);
+});
+document.getElementById("focusQuotes").addEventListener("click", ()=>{
+  document.querySelectorAll("#characterCards .quote").forEach(el=>{
+    el.style.background = "rgba(124,156,255,.08)";
+    el.style.padding = "6px 8px";
+    el.style.borderRadius = "8px";
+  });
+});
+
+/* ==============================
+   Themes panel
+   ============================== */
+function themeText(a,act,m){
+  // a=appearance reality (0…100); act=action (0…100); m=mortality meaning (0…100)
+  const axes = {
+    appear: a<33 ? "People perform masks; truth hides in play-acting." :
+             a>66 ? "Appearances crumble; reality asserts itself through accident and confession." :
+                    "Masks and truth interweave; performance both reveals and deceives.",
+    action: act<33 ? "Reflection stalls the hand; choices defer until consequences choose for us." :
+            act>66 ? "Decisive strikes create moral debts; speed brings collateral tragedy." :
+                     "Measured action balances scruple with necessity; timing is the ethical crux.",
+    mort: m<33 ? "Death is a riddle; the self dissolves into dust and memory." :
+         m>66 ? "Meaning is forged despite decay; duty outlasts flesh through testimony." :
+                 "Mortality frames choice; value emerges in how we meet the end."
+  };
+  const braid = (a>66 && act<33) ? "When reality is stark yet action stalls, the play reads as a study in paralysis before undeniable rot." :
+               (a<33 && act>66) ? "When masks dominate and action surges, the story warns how decisiveness can be misled by illusion." :
+               (m>66 && act>66) ? "Bold deeds under a banner of meaning drive the tragedy toward sacrificial clarity." :
+               (m<33 && act<33) ? "Philosophy overwhelms movement; grief and doubt become the true antagonists." :
+                                   "Ethical timing—when to act, when to wait—remains the hinge of the tragedy.";
+  return `<p>${axes.appear}</p><p>${axes.action}</p><p>${axes.mort}</p><p><b>Reading:</b> ${braid}</p>`;
+}
+function setThemeBars(a,act,m){
+  document.getElementById("tAppear").style.width = a + "%";
+  document.getElementById("tAct").style.width = act + "%";
+  document.getElementById("tMort").style.width = m + "%";
+}
+function getTheme(){ try{ return JSON.parse(localStorage.getItem(THEME_KEY)) || THEME_DEFAULT; }catch(e){ return THEME_DEFAULT; } }
+function setTheme(t){ try{ localStorage.setItem(THEME_KEY, JSON.stringify(t)); }catch(e){} }
+function renderThemeFromSliders(){
+  const a = +document.getElementById("slAppear").value;
+  const act = +document.getElementById("slAct").value;
+  const m = +document.getElementById("slMort").value;
+  setThemeBars(a,act,m);
+  document.getElementById("themeSummary").innerHTML = themeText(a,act,m);
+  setTheme({appear:a, act:act, mort:m});
+}
+function renderThemeFromState(){
+  // map play meters (A,C,T) onto theme axes roughly
+  const a = 100 - state.meters.T;      // less trust → more “appearance” uncertainty
+  const act = state.meters.A;          // direct mapping
+  const m = Math.round((state.meters.C + 50)/2); // conscience nudges meaning
+  document.getElementById("slAppear").value = a;
+  document.getElementById("slAct").value = act;
+  document.getElementById("slMort").value = m;
+  renderThemeFromSliders();
+}
+["slAppear","slAct","slMort"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", renderThemeFromSliders);
+});
+document.getElementById("syncFromPlay").addEventListener("click", renderThemeFromState);
+
+/* ==============================
+   Map rendering
+   ============================== */
+function renderMap(){
+  const $m = document.getElementById("mapSpots");
+  $m.innerHTML = "";
+  MAP.forEach(s=>{
+    const el = document.createElement("div");
+    el.className = "spot";
+    el.innerHTML = `<h4>${s.place} <span class="tag">${s.act}</span></h4>
+                    <div class="muted">${s.desc}</div>
+                    <div class="events">${s.events.map(e=>"• "+e).join("<br>")}</div>`;
+    $m.appendChild(el);
+  });
+}
+
+/* ==============================
+   Quiz logic
+   ============================== */
+let quizIndex = 0, quizOrder = [];
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+function startQuiz(){
+  quizIndex = 0;
+  quizOrder = shuffle([...QUIZ]).slice(0,5);
+  renderQuiz();
+}
+function renderQuiz(){
+  const qObj = quizOrder[quizIndex];
+  if(!qObj) return;
+  document.getElementById("qNum").textContent = quizIndex+1;
+  document.getElementById("quizQ").textContent = qObj.q;
+  const $opts = document.getElementById("quizOpts");
+  $opts.innerHTML = "";
+  qObj.opts.forEach((opt,i)=>{
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.textContent = opt;
+    b.addEventListener("click", ()=>{
+      const fb = document.getElementById("quizFeedback");
+      if(i===qObj.a){ b.classList.add("ok"); fb.innerHTML = "✅ Correct. " + qObj.why; score++; }
+      else { b.classList.add("no"); fb.innerHTML = "❌ Not quite. " + qObj.why; }
+      document.querySelectorAll("#quizOpts .btn").forEach(x=>x.disabled=true);
+      document.getElementById("quizScore").textContent = `Score: ${score} / ${quizOrder.length}`;
+    });
+    $opts.appendChild(b);
+  });
+  document.getElementById("quizFeedback").textContent = "";
+}
+let score = 0;
+document.getElementById("nextQ").addEventListener("click", ()=>{
+  if(quizIndex < quizOrder.length-1){ quizIndex++; renderQuiz(); }
+});
+document.getElementById("restartQuiz").addEventListener("click", ()=>{ score=0; startQuiz(); document.getElementById("quizScore").textContent = ""; });
+
+/* ==============================
+   Journal
+   ============================== */
+const $journal = document.getElementById("journalArea");
+function loadJournal(){ try{ $journal.value = localStorage.getItem(JOURNAL_KEY)||""; }catch(e){} }
+$journal.addEventListener("input", ()=>{ try{ localStorage.setItem(JOURNAL_KEY, $journal.value); }catch(e){} });
+document.getElementById("insertPrompt").addEventListener("click", ()=>{
+  const prompts = [
+    "Write a four-line soliloquy that begins with a question.",
+    "Describe a mask you wear in public. What does it hide?",
+    "Finish: If I act now, I risk… If I wait, I risk…",
+    "What truth would a play within a play reveal today?"
+  ];
+  const p = prompts[Math.floor(Math.random()*prompts.length)];
+  const cursor = $journal.selectionStart || $journal.value.length;
+  const txt = $journal.value;
+  $journal.value = txt.slice(0,cursor) + (cursor? "\n":"") + "🪶 " + p + "\n" + txt.slice(cursor);
+  $journal.dispatchEvent(new Event("input"));
+});
+document.getElementById("exportJournal").addEventListener("click", ()=>{
+  const blob = new Blob([ $journal.value ], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {href:url, download:"hamlet_journal.txt"});
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+/* ==============================
+   Nav tabs
+   ============================== */
+const tabs = Array.from(document.querySelectorAll("nav [role=tab]"));
+const sections = Array.from(document.querySelectorAll("main section"));
+tabs.forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    tabs.forEach(b=>b.setAttribute("aria-selected","false"));
+    btn.setAttribute("aria-selected","true");
+    const id = btn.dataset.tab;
+    sections.forEach(sec=> sec.classList.toggle("active", sec.id===id));
+  });
+});
+
+/* ==============================
+   Theme / Save / Reset
+   ============================== */
+document.getElementById("themeToggle").addEventListener("click", (e)=>{
+  const pressed = e.currentTarget.getAttribute("aria-pressed")==="true";
+  e.currentTarget.setAttribute("aria-pressed", String(!pressed));
+  document.body.classList.toggle("light");
+});
+document.getElementById("saveBtn").addEventListener("click", ()=>{
+  saveState();
+  const blob = new Blob([ JSON.stringify(state,null,2) ], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {href:url, download:"hamlet_progress.json"});
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  if(confirm("Reset all progress and journal?")) resetAll();
+});
+
+/* ==============================
+   Init
+   ============================== */
+function init(){
+  loadState();
+  renderNode();
+  renderMeters();
+  renderCharacters("all");
+  renderMap();
+  const t = getTheme();
+  document.getElementById("slAppear").value = t.appear;
+  document.getElementById("slAct").value = t.act;
+  document.getElementById("slMort").value = t.mort;
+  renderThemeFromSliders();
+  loadJournal();
+  startQuiz();
+}
+init();
+</script>
+</body>
+</html>
